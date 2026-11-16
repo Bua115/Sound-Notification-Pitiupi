@@ -1,0 +1,79 @@
+diff --git a/pitiupi/src/pitiupi/control/ConnectionManager.java b/pitiupi/src/pitiupi/control/ConnectionManager.java
+--- a/pitiupi/src/pitiupi/control/ConnectionManager.java
++++ b/pitiupi/src/pitiupi/control/ConnectionManager.java
+@@ -5,6 +5,7 @@ import pitiupi.application.invites.InviteInboxService;
+ import pitiupi.application.peeractions.PeerActionBroker;
+ import pitiupi.application.presence.PresenceService;
++import pitiupi.api.plugin.ChatMessageEventBus;
+ import pitiupi.models.Messages.SessionInviteMessage;
+ import pitiupi.control.plugins.PluginManager;
+ import pitiupi.models.Messages.GoodbyeMessage;
+@@ -40,4 +41,5 @@ public class ConnectionManager {
+     private final PeerActivityInbox peerActivityInbox;
+     private final PeerActivityFocus peerActivityFocus;
++    private final ChatMessageEventBus chatMessageEventBus = new ChatMessageEventBus();
+ 
+     private final Object socketsLock = new Object();
+@@ -103,7 +105,11 @@ public class ConnectionManager {
+     public PeerActivityFocus getPeerActivityFocus() {
+         return peerActivityFocus;
+     }
+ 
++    public ChatMessageEventBus getChatMessageEventBus() {
++        return chatMessageEventBus;
++    }
++
+     public void setInviteAcceptedUiListener(Consumer<String> listener) {
+         this.inviteAcceptedUiListener = listener != null ? listener : pluginId -> {
+         };
+diff --git a/plugins/chat/src/pitiupi/chat/plugin/ChatPlugin.java b/plugins/chat/src/pitiupi/chat/plugin/ChatPlugin.java
+--- a/plugins/chat/src/pitiupi/chat/plugin/ChatPlugin.java
++++ b/plugins/chat/src/pitiupi/chat/plugin/ChatPlugin.java
+@@ -1,5 +1,6 @@
+ package pitiupi.chat.plugin;
+ 
++import pitiupi.api.plugin.ChatMessageReceivedEvent;
+ import pitiupi.api.plugin.PeerActionsRegistrar;
+ import pitiupi.api.plugin.PluginWorkspace;
+ import pitiupi.application.peeractions.PeerAction;
+@@ -18,5 +19,6 @@ import pitiupi.models.User;
+ import pitiupi.net.tcp.TcpAttemptListener;
+ import pitiupi.net.tcp.TcpConnection;
++import pitiupi.presentation.shell.LocalUserIdentity;
+ 
+ import javax.swing.SwingUtilities;
+@@ -100,7 +102,9 @@ public class ChatPlugin extends Plugin implements PrivateChatHost {
+     @Override
+     public void receiveMessage(Message message) {
+         if (message instanceof ChatMessage msg && chatPanel != null) {
++            publishPublicMessageIfRemote(msg.getName(), msg.getSenderIp());
+             SwingUtilities.invokeLater(() -> chatPanel.receiveChatMessage(msg));
+         } else if (message instanceof LegacyMpChatMessage legacy && chatPanel != null) {
++            publishPublicMessageIfRemote(legacy.getNome(), legacy.getIp());
+             SwingUtilities.invokeLater(() -> chatPanel.receiveLegacyMessage(
+                     legacy.getTipoMensagem(),
+@@ -125,14 +129,27 @@ public class ChatPlugin extends Plugin implements PrivateChatHost {
+         if (legacy == null) {
+             return true;
+         }
++        connectionManager.getChatMessageEventBus().publish(
++                new ChatMessageReceivedEvent(ChatMessageReceivedEvent.Channel.PRIVATE)
++        );
+         privateChatController.receiveMessage(connection, legacy);
+         return true;
+     }
+ 
++    private void publishPublicMessageIfRemote(String senderName, String senderIp) {
++        if (LocalUserIdentity.isLocalSender(connectionManager, senderName, senderIp)) {
++            return;
++        }
++        connectionManager.getChatMessageEventBus().publish(
++                new ChatMessageReceivedEvent(ChatMessageReceivedEvent.Channel.PUBLIC)
++        );
++    }
++
+     @Override
+     public boolean onSocketClosed(TcpConnection connection) {
+         privateChatController.closeChat(connection);
+         return true;
+     }

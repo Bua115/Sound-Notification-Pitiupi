@@ -1,7 +1,7 @@
 # Pitiupi sound notifications
 
 This folder is an optional plugin module. Copy it into a Pitiupi app clone as
-`plugins/Notification-Plugin`. The plugin cannot work by itself in an
+`plugins/notification-plugin`. The plugin cannot work by itself in an
 unmodified base app: public and private chat messages are delivered to the chat
 plugin, so the base needs a small event API and chat integration.
 
@@ -19,11 +19,11 @@ plugin, so the base needs a small event API and chat integration.
 ## Install into a fresh base app
 
 Start with a clone of the Pitiupi base app, then copy this entire
-`Notification-Plugin` folder into that clone's `plugins/` directory:
+`notification-plugin` folder into that clone's `plugins/` directory:
 
 ```text
 <app>/
-  plugins/Notification-Plugin/
+  plugins/notification-plugin/
   pitiupi/src/pitiupi/
   plugins/chat/src/pitiupi/chat/plugin/ChatPlugin.java
   plugins.registry.json
@@ -32,12 +32,12 @@ Start with a clone of the Pitiupi base app, then copy this entire
 Apply the following integration in the base app before building:
 
 1. Copy both Java files from
-   `plugins/Notification-Plugin/integration/core/pitiupi/api/plugin/` into
+   `plugins/notification-plugin/integration/core/pitiupi/api/plugin/` into
    `<app>/pitiupi/src/pitiupi/api/plugin/`.
 2. From the base app's root, apply the chat/core changes:
 
    ```text
-   git apply plugins/Notification-Plugin/integration/chat-event-hook.patch
+   git apply plugins/notification-plugin/integration/chat-event-hook.patch
    ```
 
    The patch updates the existing `ConnectionManager.java` and
@@ -45,7 +45,7 @@ Apply the following integration in the base app before building:
    conflict, the base app's code differs from the patch's expected version.
    Do not force it: port the same changes to that version instead.
 3. Add the entry from
-   `plugins/Notification-Plugin/integration/plugins.registry-entry.txt` to the
+   `plugins/notification-plugin/integration/plugins.registry-entry.txt` to the
    `plugins` array in the base app's root `plugins.registry.json`. Keep the
    existing entries and add a comma where needed.
 4. Build and launch from the base app's root. The launcher rebuilds the core

@@ -1,6 +1,6 @@
     {
       "id": "notification",
-      "dir": "plugins/Notification-Plugin",
+      "dir": "plugins/notification-plugin",
       "build": "ant",
       "jar": "dist/pitiupi.notification.jar",
       "menuCategory": "Social"
